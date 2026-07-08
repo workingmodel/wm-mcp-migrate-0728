@@ -1,0 +1,52 @@
+{
+  "name": "@workingmodel/mcp-migrate-0728",
+  "version": "1.0.0",
+  "description": "Checks whether your MCP server survives the 2026-07-28 spec — the six breaking changes, statically and live.",
+  "license": "MIT",
+  "author": "Working Model",
+  "bin": {
+    "mcp-migrate-0728": "dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "migration",
+    "spec",
+    "cli",
+    "audit",
+    "breaking-changes",
+    "static-analysis",
+    "node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/workingmodel/mcp-migrate-0728.git"
+  },
+  "homepage": "https://github.com/workingmodel/mcp-migrate-0728#readme"
+}
