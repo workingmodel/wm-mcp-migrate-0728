@@ -1,7 +1,7 @@
 {
   "name": "@workingmodel/mcp-migrate-0728",
-  "version": "1.0.0",
-  "description": "Checks whether your MCP server survives the 2026-07-28 spec — the six breaking changes, statically and live.",
+  "version": "1.1.0",
+  "description": "Checks whether your MCP server survives the 2026-07-28 spec — the breaking changes, statically and live.",
   "license": "MIT",
   "author": "Working Model",
   "bin": {
