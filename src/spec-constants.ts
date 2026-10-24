@@ -202,8 +202,7 @@ export const SPEC_REF_R11_REMOVED = SOURCE_FINAL_CHANGELOG;
 export const SPEC_REF_R12_RESULT_TYPE = SOURCE_FINAL_CHANGELOG;
 export const SPEC_REF_F_SERIES = SOURCE_FINAL_CHANGELOG;
 
-// ─── C6 footer hook ─────────────────────────────────────────────────────────
+// ─── Footer ─────────────────────────────────────────────────────────────────
 
-// placeholder — Adam to confirm final contact before publish
 export const CONTACT_EMAIL = "hello@workingmodel.co";
 export const FOOTER_MESSAGE = `Need this done for you? Working Model runs fixed-price MCP migration sprints — ${CONTACT_EMAIL}.`;
