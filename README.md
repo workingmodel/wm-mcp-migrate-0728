@@ -1,8 +1,8 @@
 # @workingmodel/mcp-migrate-0728
 
-Checks whether your MCP server survives the **2026-07-28 spec** — the breaking changes, statically and live. Developed by [Working Model](https://workingmodel.co).
+Check your deployed MCP server against the **2026-07-28 spec**: probe the running endpoint over the wire, scan its source, or both. You get a punch list of what doesn't conform and how to fix each item. Developed by [Working Model](https://workingmodel.co).
 
-> **Status:** v1.1.0 — checked against the final 2026-07-28 spec. See [`build-spec.md`](build-spec.md) for the original build specification.
+> **Status:** v1.1.0. Checked against the [final 2026-07-28 spec](https://modelcontextprotocol.io/specification/2026-07-28/changelog).
 
 ```
 mcp-migrate-0728
@@ -24,9 +24,16 @@ Summary: 3 errors, 0 warnings — this server needs migration work for the 2026-
 Need this done for you? Working Model runs fixed-price MCP migration sprints — hello@workingmodel.co.
 ```
 
+## Who it's for
+
+- **Anyone running a deployed MCP server.** The live probe sends raw JSON-RPC to your endpoint. It checks what the server actually does on the wire (sessions, routing headers, error codes, cache metadata, capabilities), not what its code or docs claim.
+- **Hand-rolled servers, gateways and proxies.** If you don't use an official SDK, nothing upgrades the protocol for you, and these checks catch real breakage.
+- **SDK-based servers.** The tool detects which official SDK you use and whether that version can speak 07-28 at all. TypeScript `@modelcontextprotocol/sdk` v1.x can't. `@modelcontextprotocol/server` v2 can, but only if you opt in. Python `mcp` 2.x speaks it by default. It then checks the code you still own, such as server-initiated requests, removed methods and Tasks.
+- **CI.** It exits `1` on any error finding, so it can gate a migration branch.
+
 ## What it does
 
-Point it at an MCP server — its source (static analysis) or a running endpoint (live probe) — and it tells you what will break under the 2026-07-28 spec and how to fix each thing:
+Point it at an MCP server, either its source (static analysis) or a running endpoint (live probe). It reports what doesn't conform to the 2026-07-28 spec and how to fix each item:
 
 1. **Sessions eliminated** — client metadata moves to per-request `_meta`; no `initialize` handshake
 2. **Required headers** — `Mcp-Method` and `Mcp-Name`
@@ -111,7 +118,7 @@ All spec-specific literals (header names, error codes, field names, method names
 
 ## Why This Exists
 
-The MCP `2026-07-28` spec is the biggest breaking revision so far: it removes sessions and the `initialize` handshake, makes `server/discover`, routing headers, `resultType` and cache metadata mandatory, replaces server-initiated requests with Multi Round-Trip Requests, moves Tasks to an extension, removes several methods (`ping`, `logging/setLevel`, subscriptions, SSE resumability), changes an error code, and deprecates Roots, Sampling and Logging. This tool isn't a generic MCP "doctor" — it's scoped entirely to that one migration: what will break, and what to do about it.
+The MCP `2026-07-28` spec is the biggest breaking revision so far: it removes sessions and the `initialize` handshake, makes `server/discover`, routing headers, `resultType` and cache metadata mandatory, replaces server-initiated requests with Multi Round-Trip Requests, moves Tasks to an extension, removes several methods (`ping`, `logging/setLevel`, subscriptions, SSE resumability), changes an error code, and deprecates Roots, Sampling and Logging. Official SDKs absorb much of that, and they also serve earlier protocol revisions, so nothing breaks overnight. But "the SDK handles it" is only true if you're on an SDK release that supports 07-28, you've opted in where required, and your own handlers don't rely on what was removed. This tool checks those things and probes the deployed server to confirm. It isn't a generic MCP "doctor": its scope is this one migration.
 
 ## License
 
