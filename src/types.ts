@@ -1,7 +1,7 @@
 export type Severity = "error" | "warning" | "info";
 
 export interface Finding {
-  ruleId: string; // "R1"…"R6" (+ "F1"… for forward-looking)
+  ruleId: string; // "R1"…"R12" (+ "F3" for the forward-looking --strict rule)
   severity: Severity;
   source: "static" | "live";
   message: string; // what's wrong / at risk
@@ -10,7 +10,7 @@ export interface Finding {
 }
 
 export interface Rule {
-  id: string; // "R1"…"R6" (+ "F1"… for forward-looking)
+  id: string; // "R1"…"R12" (+ "F3" for the forward-looking --strict rule)
   title: string;
   severity: Severity; // default severity; a check may downgrade/upgrade
   specRef: string; // URL from spec-constants
@@ -46,8 +46,8 @@ export interface SessionProbe extends ProbeCheck {
 }
 
 export interface HeadersProbe extends ProbeCheck {
-  acceptedWithoutHeaders: boolean; // request with no Mcp-Method/Mcp-Name succeeded
-  acceptedWithMismatch: boolean; // request with mismatched Mcp-Method header vs body succeeded
+  acceptedWithoutHeaders: boolean; // request with no routing headers succeeded
+  acceptedWithMismatch: boolean; // request with mismatched routing header vs body succeeded
 }
 
 export interface ErrorCodeProbe extends ProbeCheck {
@@ -56,6 +56,7 @@ export interface ErrorCodeProbe extends ProbeCheck {
 
 export interface ListCacheProbe extends ProbeCheck {
   hasTtlMs: boolean;
+  hasCacheScope: boolean;
 }
 
 export interface TraceContextProbe extends ProbeCheck {

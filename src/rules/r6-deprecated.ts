@@ -2,7 +2,7 @@ import {
   CAPABILITY_LOGGING,
   CAPABILITY_ROOTS,
   CAPABILITY_SAMPLING,
-  DEPRECATION_SUNSET_DATE,
+  DEPRECATION_EARLIEST_REMOVAL,
   SPEC_REF_R6_DEPRECATED,
 } from "../spec-constants.js";
 import type { Finding, ProbeResult, Rule, StaticContext } from "../types.js";
@@ -22,7 +22,7 @@ function findingFor(cap: string, source: "static" | "live"): Finding {
     ruleId: ID,
     severity: "warning",
     source,
-    message: `Server declares/uses the "${cap}" capability, deprecated as of 07-28 (works through ~${DEPRECATION_SUNSET_DATE}).`,
+    message: `Server declares/uses the "${cap}" capability, deprecated as of 07-28 (eligible for removal in the first spec revision released on or after ${DEPRECATION_EARLIEST_REMOVAL}).`,
     fix: `Plan a replacement: ${cap} → ${REPLACEMENTS[cap]}. Not a blocker on its own.`,
     specRef: SPEC_REF_R6_DEPRECATED,
   };

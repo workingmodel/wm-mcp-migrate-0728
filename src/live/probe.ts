@@ -1,11 +1,26 @@
 import {
+  FIELD_CACHE_SCOPE,
+  FIELD_PROTOCOL_VERSION,
   HEADER_MCP_METHOD,
+  META_CLIENT_CAPABILITIES,
+  META_CLIENT_INFO,
+  META_FIELD,
+  META_PROTOCOL_VERSION,
+  METHOD_INITIALIZE,
+  METHOD_RESOURCES_LIST,
+  METHOD_RESOURCES_READ,
+  METHOD_TOOLS_LIST,
+  METHOD_SERVER_DISCOVER,
+  SPEC_DATE,
   HEADER_MCP_NAME,
   HEADER_SESSION_ID,
   FIELD_TTL_MS,
   TRACE_FIELD_TRACEPARENT,
 } from "../spec-constants.js";
 import type { ProbeResult } from "../types.js";
+
+const TOOL_NAME = "mcp-migrate-0728";
+const TOOL_VERSION = "1.1.0"; // keep in step with package.json
 
 let requestId = 0;
 function nextId(): number {
@@ -73,7 +88,7 @@ export async function probe(url: string): Promise<ProbeResult> {
     const { status, json } = await post(url, {
       jsonrpc: "2.0",
       id: nextId(),
-      method: "tools/list",
+      method: METHOD_TOOLS_LIST,
     });
     // A server that still requires sessions will either reject with a 4xx or return a
     // JSON-RPC error complaining about a missing/invalid session id.
@@ -97,15 +112,15 @@ export async function probe(url: string): Promise<ProbeResult> {
   try {
     const withoutHeaders = await post(
       url,
-      { jsonrpc: "2.0", id: nextId(), method: "tools/list" },
+      { jsonrpc: "2.0", id: nextId(), method: METHOD_TOOLS_LIST },
       sessionHeader
     );
     const acceptedWithoutHeaders = withoutHeaders.status < 400 && !withoutHeaders.json?.error;
 
     const mismatched = await post(
       url,
-      { jsonrpc: "2.0", id: nextId(), method: "tools/list" },
-      { ...sessionHeader, [HEADER_MCP_METHOD]: "resources/list", [HEADER_MCP_NAME]: "mismatch-probe" }
+      { jsonrpc: "2.0", id: nextId(), method: METHOD_TOOLS_LIST },
+      { ...sessionHeader, [HEADER_MCP_METHOD]: METHOD_RESOURCES_LIST, [HEADER_MCP_NAME]: "mismatch-probe" }
     );
     const acceptedWithMismatch = mismatched.status < 400 && !mismatched.json?.error;
 
@@ -121,7 +136,7 @@ export async function probe(url: string): Promise<ProbeResult> {
       {
         jsonrpc: "2.0",
         id: nextId(),
-        method: "resources/read",
+        method: METHOD_RESOURCES_READ,
         params: { uri: "mcp-migrate-0728://definitely-missing-resource" },
       },
       sessionHeader
@@ -137,11 +152,12 @@ export async function probe(url: string): Promise<ProbeResult> {
 
   // ── R4: ttlMs on tools/list ───────────────────────────────────────────────
   try {
-    const { json } = await post(url, { jsonrpc: "2.0", id: nextId(), method: "tools/list" }, sessionHeader);
+    const { json } = await post(url, { jsonrpc: "2.0", id: nextId(), method: METHOD_TOOLS_LIST }, sessionHeader);
     const hasTtlMs = Boolean(json?.result && FIELD_TTL_MS in json.result);
-    result.listCache = { ok: true, hasTtlMs };
+    const hasCacheScope = Boolean(json?.result && FIELD_CACHE_SCOPE in json.result);
+    result.listCache = { ok: true, hasTtlMs, hasCacheScope };
   } catch (err) {
-    result.listCache = { ok: false, error: err instanceof Error ? err.message : String(err), hasTtlMs: false };
+    result.listCache = { ok: false, error: err instanceof Error ? err.message : String(err), hasTtlMs: false, hasCacheScope: false };
   }
 
   // ── R5: trace context via _meta (best-effort, not directly observable) ──
@@ -151,7 +167,7 @@ export async function probe(url: string): Promise<ProbeResult> {
       {
         jsonrpc: "2.0",
         id: nextId(),
-        method: "tools/list",
+        method: METHOD_TOOLS_LIST,
         params: { _meta: { [TRACE_FIELD_TRACEPARENT]: "00-0000000000000000000000000000aaaa-000000000000aaaa-01" } },
       },
       sessionHeader
@@ -163,17 +179,42 @@ export async function probe(url: string): Promise<ProbeResult> {
   }
 
   // ── R6: advertised deprecated capabilities ───────────────────────────────
+  // 07-28 servers MUST implement server/discover; try it first and fall back to the legacy
+  // initialize handshake for servers that haven't migrated.
   try {
-    const { json } = await post(
+    const clientInfo = { name: TOOL_NAME, version: TOOL_VERSION };
+    const discover = await post(
       url,
       {
         jsonrpc: "2.0",
         id: nextId(),
-        method: "initialize",
-        params: { protocolVersion: "2026-07-28", capabilities: {}, clientInfo: { name: "mcp-migrate-0728", version: "1.0.0" } },
+        method: METHOD_SERVER_DISCOVER,
+        params: {
+          [META_FIELD]: {
+            [META_PROTOCOL_VERSION]: SPEC_DATE,
+            [META_CLIENT_CAPABILITIES]: {},
+            [META_CLIENT_INFO]: clientInfo,
+          },
+        },
       },
       sessionHeader
     );
+
+    let json: JsonRpcResponse | null = discover.json;
+    if (!json?.result || json.error) {
+      json = (
+        await post(
+          url,
+          {
+            jsonrpc: "2.0",
+            id: nextId(),
+            method: METHOD_INITIALIZE,
+            params: { [FIELD_PROTOCOL_VERSION]: SPEC_DATE, capabilities: {}, clientInfo },
+          },
+          sessionHeader
+        )
+      ).json;
+    }
     const capabilities = json?.result?.capabilities ? Object.keys(json.result.capabilities) : [];
     result.capabilities = { ok: true, capabilities };
   } catch (err) {

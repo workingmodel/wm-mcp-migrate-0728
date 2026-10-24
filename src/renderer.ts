@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { ALL_RULES } from "./rules/index.js";
 import { FOOTER_MESSAGE, SPEC_DATE, SPEC_STATUS } from "./spec-constants.js";
 import type { Finding, JsonOutput } from "./types.js";
 
@@ -10,19 +11,7 @@ const COLORS: Record<Finding["severity"], (s: string) => string> = {
 };
 
 // Rule id → human title, for the "[R1 Sessions]" style label in output.
-const RULE_TITLES: Record<string, string> = {
-  R1: "Sessions",
-  R2: "Headers",
-  R3: "Error Code",
-  R4: "ttlMs",
-  R5: "Trace Context",
-  R6: "Deprecated",
-  F1: "Handshake Removal",
-  F2: "InputRequiredResult",
-  F3: "JSON Schema 2020-12",
-  F4: "Tasks Extension",
-  F5: "Auth iss Param",
-};
+const RULE_TITLES: Record<string, string> = Object.fromEntries(ALL_RULES.map((r) => [r.id, r.title]));
 
 function label(ruleId: string): string {
   return RULE_TITLES[ruleId] ? `${ruleId} ${RULE_TITLES[ruleId]}` : ruleId;
@@ -82,8 +71,8 @@ export function renderSummary(findings: Finding[]): void {
 
   const verdict =
     errors > 0
-      ? ` — this server needs migration work before ${SPEC_DATE}.`
-      : ` — no blocking issues, but review the warnings before ${SPEC_DATE}.`;
+      ? ` — this server needs migration work for the ${SPEC_DATE} spec.`
+      : ` — no blocking issues, but review the warnings for the ${SPEC_DATE} spec.`;
   console.log(chalk.bold("Summary: ") + parts.join(", ") + verdict);
   console.log();
 

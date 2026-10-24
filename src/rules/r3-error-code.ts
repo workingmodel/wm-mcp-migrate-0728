@@ -7,12 +7,7 @@ import type { Finding, ProbeResult, Rule, StaticContext } from "../types.js";
 
 const ID = "R3";
 const TITLE = "Error Code";
-// build-spec.md §5 R3: "Verify the exact old→new codes against the final spec — this came
-// partly from an RC summarizer. If unconfirmed at build time, keep the rule but mark severity
-// `warning`." The new-code literal is not independently confirmed against a primary source —
-// downgraded per that instruction.
-const SEVERITY = "warning";
-const UNCONFIRMED_SUFFIX = "verify against final spec";
+const SEVERITY = "error";
 
 function staticCheck(ctx: StaticContext): Finding[] {
   const legacy = String(ERROR_CODE_RESOURCE_NOT_FOUND_LEGACY);
@@ -23,8 +18,8 @@ function staticCheck(ctx: StaticContext): Finding[] {
       ruleId: ID,
       severity: SEVERITY,
       source: "static",
-      message: `Found hardcoded legacy error code ${legacy} in source, likely used for missing-resource responses — the code changes in 07-28 (${UNCONFIRMED_SUFFIX}).`,
-      fix: `Replace hardcoded numeric error-code checks with named constants and update to the new missing-resource code once confirmed.`,
+      message: `Found hardcoded legacy error code ${legacy} in source, likely used for missing-resource responses — 07-28 changes it to ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW}.`,
+      fix: `Replace hardcoded numeric error-code checks with named constants and return ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW} for missing resources.`,
       specRef: SPEC_REF_R3_ERROR_CODE,
     },
   ];
@@ -42,8 +37,8 @@ function liveCheck(probe: ProbeResult): Finding[] {
         ruleId: ID,
         severity: SEVERITY,
         source: "live",
-        message: `Live probe: missing-resource request returned legacy error code ${code} — the expected 07-28 code is ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW} (${UNCONFIRMED_SUFFIX}).`,
-        fix: `Return the new standard error code for missing resources once confirmed against the final spec.`,
+        message: `Live probe: missing-resource request returned legacy error code ${code} — the expected 07-28 code is ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW}.`,
+        fix: `Return ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW} for missing resources.`,
         specRef: SPEC_REF_R3_ERROR_CODE,
       },
     ];
@@ -55,8 +50,8 @@ function liveCheck(probe: ProbeResult): Finding[] {
       ruleId: ID,
       severity: SEVERITY,
       source: "live",
-      message: `Live probe: missing-resource request returned error code ${code}, which matches neither the legacy (${ERROR_CODE_RESOURCE_NOT_FOUND_LEGACY}) nor expected new (${ERROR_CODE_RESOURCE_NOT_FOUND_NEW}) code (${UNCONFIRMED_SUFFIX}).`,
-      fix: `Confirm the correct missing-resource error code against the final spec and align the server's response.`,
+      message: `Live probe: missing-resource request returned error code ${code}, which matches neither the legacy (${ERROR_CODE_RESOURCE_NOT_FOUND_LEGACY}) nor expected new (${ERROR_CODE_RESOURCE_NOT_FOUND_NEW}) code.`,
+      fix: `Return ${ERROR_CODE_RESOURCE_NOT_FOUND_NEW} for missing resources, per the final spec.`,
       specRef: SPEC_REF_R3_ERROR_CODE,
     },
   ];

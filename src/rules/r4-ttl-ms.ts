@@ -1,46 +1,81 @@
-import { FIELD_TTL_MS, SPEC_REF_R4_TTL_MS } from "../spec-constants.js";
+import {
+  CACHEABLE_METHODS,
+  CACHE_SCOPE_PRIVATE,
+  CACHE_SCOPE_PUBLIC,
+  FIELD_CACHE_SCOPE,
+  FIELD_TTL_MS,
+  METHOD_TOOLS_LIST,
+  SPEC_REF_R4_TTL_MS,
+} from "../spec-constants.js";
 import type { Finding, ProbeResult, Rule, StaticContext } from "../types.js";
 
 const ID = "R4";
-const TITLE = "ttlMs";
+const TITLE = "Cache metadata";
 
 function staticCheck(ctx: StaticContext): Finding[] {
-  const buildsList = /tools\/list|resources\/list/.test(ctx.allContent);
-  if (!buildsList) return [];
-  if (ctx.allContent.includes(FIELD_TTL_MS)) return [];
+  const buildsCacheable = CACHEABLE_METHODS.some((m) => ctx.allContent.includes(m));
+  if (!buildsCacheable) return [];
 
-  return [
-    {
+  const findings: Finding[] = [];
+  const methods = CACHEABLE_METHODS.join(", ");
+
+  // One finding per missing field.
+  if (!ctx.allContent.includes(FIELD_TTL_MS)) {
+    findings.push({
       ruleId: ID,
-      severity: "warning",
+      severity: "error",
       source: "static",
-      message: `Server builds tools/list or resources/list responses but never sets ${FIELD_TTL_MS} — clients can't cache your list responses.`,
-      fix: `Add ${FIELD_TTL_MS} (ms) to list responses reflecting real cache validity; omit only if you intend to keep legacy refetch behavior.`,
+      message: `Server handles list/read endpoints (${methods}) but never sets ${FIELD_TTL_MS} — it is REQUIRED on these results in 07-28 (CacheableResult).`,
+      fix: `Add ${FIELD_TTL_MS} (ms) to every result of ${methods}, reflecting real cache validity.`,
       specRef: SPEC_REF_R4_TTL_MS,
-    },
-  ];
+    });
+  }
+  if (!ctx.allContent.includes(FIELD_CACHE_SCOPE)) {
+    findings.push({
+      ruleId: ID,
+      severity: "error",
+      source: "static",
+      message: `Server handles list/read endpoints (${methods}) but never sets ${FIELD_CACHE_SCOPE} — it is REQUIRED on these results in 07-28 (CacheableResult).`,
+      fix: `Add ${FIELD_CACHE_SCOPE} ("${CACHE_SCOPE_PUBLIC}" or "${CACHE_SCOPE_PRIVATE}") to every result of ${methods}.`,
+      specRef: SPEC_REF_R4_TTL_MS,
+    });
+  }
+
+  return findings;
 }
 
 function liveCheck(probe: ProbeResult): Finding[] {
   if (!probe.listCache?.ok) return [];
-  if (probe.listCache.hasTtlMs) return [];
+  const findings: Finding[] = [];
 
-  return [
-    {
+  if (!probe.listCache.hasTtlMs) {
+    findings.push({
       ruleId: ID,
-      severity: "warning",
+      severity: "error",
       source: "live",
-      message: `Live probe: tools/list response has no ${FIELD_TTL_MS} — clients can't cache your tool list.`,
-      fix: `Add ${FIELD_TTL_MS} (ms) to list responses. Optional, but recommended before 07-28.`,
+      message: `Live probe: ${METHOD_TOOLS_LIST} result has no ${FIELD_TTL_MS} — it is REQUIRED in 07-28.`,
+      fix: `Add ${FIELD_TTL_MS} (ms) to list results.`,
       specRef: SPEC_REF_R4_TTL_MS,
-    },
-  ];
+    });
+  }
+  if (!probe.listCache.hasCacheScope) {
+    findings.push({
+      ruleId: ID,
+      severity: "error",
+      source: "live",
+      message: `Live probe: ${METHOD_TOOLS_LIST} result has no ${FIELD_CACHE_SCOPE} — it is REQUIRED in 07-28.`,
+      fix: `Add ${FIELD_CACHE_SCOPE} ("${CACHE_SCOPE_PUBLIC}" or "${CACHE_SCOPE_PRIVATE}") to list results.`,
+      specRef: SPEC_REF_R4_TTL_MS,
+    });
+  }
+
+  return findings;
 }
 
 export const r4TtlMs: Rule = {
   id: ID,
   title: TITLE,
-  severity: "warning",
+  severity: "error",
   specRef: SPEC_REF_R4_TTL_MS,
   staticCheck,
   liveCheck,
