@@ -6,6 +6,7 @@ const TITLE = "Headers";
 
 function staticCheck(ctx: StaticContext): Finding[] {
   const findings: Finding[] = [];
+  if (ctx.sdk.validatesRoutingHeaders) return findings; // the SDK entry point validates them
 
   // Only meaningful for HTTP-transport servers — heuristic: any file mentioning an HTTP
   // server/handler pattern at all. If the project never mentions either header, flag it.

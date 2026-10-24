@@ -1,4 +1,6 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
-const server = new McpServer({ name: "demo", version: "1.0.0" });
-server.setRequestHandler("server/discover", async () => ({ capabilities: { tools: {} } }));
+// Hand-rolled MCP server (modelcontextprotocol).
+export function handle(method: string) {
+  if (method === "server/discover") return { capabilities: { tools: {} } };
+  if (method === "tools/call") return { content: [] };
+  return {};
+}

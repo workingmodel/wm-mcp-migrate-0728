@@ -12,6 +12,7 @@ import { r9Tasks } from "./r9-tasks.js";
 import { r10AuthIss } from "./r10-auth-iss.js";
 import { r11Removed } from "./r11-removed.js";
 import { r12ResultType } from "./r12-result-type.js";
+import { r13Sdk } from "./r13-sdk.js";
 
 export const CORE_RULES: Rule[] = [
   r1Sessions,
@@ -26,6 +27,7 @@ export const CORE_RULES: Rule[] = [
   r10AuthIss,
   r11Removed,
   r12ResultType,
+  r13Sdk,
 ];
 
 export const ALL_RULES: Rule[] = [...CORE_RULES, ...fSeriesRules];

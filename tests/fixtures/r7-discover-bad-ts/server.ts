@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
-const server = new McpServer({ name: "demo", version: "1.0.0" });
-// Registers tools but never implements the discovery method.
-server.tool("search", async () => ({ content: [] }));
+// Hand-rolled MCP server (modelcontextprotocol): handles tool calls, no discovery method.
+export function handle(method: string) {
+  if (method === "tools/call") return { content: [] };
+  return {};
+}

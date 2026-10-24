@@ -53,6 +53,20 @@ describe("CLI integration — static mode", () => {
   });
 });
 
+describe("CLI integration — SDK-based servers", () => {
+  it("exits 0 for a v2 server that opted in to 07-28", async () => {
+    const { code, stdout } = await run([path.join(FIXTURES, "sdk-ts-v2-optedin")]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("R13 SDK");
+  });
+
+  it("exits 1 for a v1 SDK server", async () => {
+    const { code, stdout } = await run([path.join(FIXTURES, "sdk-ts-v1")]);
+    expect(code).toBe(1);
+    expect(stdout).toContain("R13 SDK");
+  });
+});
+
 describe("CLI integration — live mode", () => {
   it("exits 1 and surfaces every rule against a fully non-migrated mock server", async () => {
     const mock = await startMockServer(FULLY_OLD_SPEC_OPTIONS);

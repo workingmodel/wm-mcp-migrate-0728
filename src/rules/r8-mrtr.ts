@@ -3,6 +3,8 @@ import {
   FIELD_RESULT_TYPE,
   RESULT_INPUT_REQUIRED,
   RESULT_TYPE_INPUT_REQUIRED,
+  SDK_INPUT_REQUIRED_CALL,
+  SDK_SERVER_INITIATED_CALLS,
   SERVER_INITIATED_METHODS,
   SPEC_REF_R8_MRTR,
 } from "../spec-constants.js";
@@ -16,9 +18,11 @@ function staticCheck(ctx: StaticContext): Finding[] {
   // Only servers that actually issue server-initiated requests are affected; a server that
   // never does is not flagged for merely not using InputRequiredResult.
   // Whole-token match: "roots/list" must not match inside "notifications/roots/list_changed".
-  const issued = SERVER_INITIATED_METHODS.filter((m) => new RegExp(`${escapeRegExp(m)}(?![\\w/])`).test(ctx.allContent));
+  const issued = [...SERVER_INITIATED_METHODS, ...SDK_SERVER_INITIATED_CALLS].filter((m) => new RegExp(`${escapeRegExp(m)}(?![\\w/])`).test(ctx.allContent));
   if (issued.length === 0) return [];
-  if (ctx.allContent.includes(RESULT_INPUT_REQUIRED) || ctx.allContent.includes(RESULT_TYPE_INPUT_REQUIRED)) return [];
+  const usesMrtr = [RESULT_INPUT_REQUIRED, RESULT_TYPE_INPUT_REQUIRED].some((m) => ctx.allContent.includes(m)) ||
+    new RegExp(`${SDK_INPUT_REQUIRED_CALL}\\(`).test(ctx.allContent);
+  if (usesMrtr) return [];
 
   return [
     staticFinding(

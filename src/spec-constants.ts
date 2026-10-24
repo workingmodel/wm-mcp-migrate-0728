@@ -151,6 +151,35 @@ export const METHOD_TOOLS_CALL = "tools/call";
 // source: JSON Schema 2020-12 meta-schema URI — confirmed (stable, spec-independent)
 export const JSON_SCHEMA_DIALECT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 
+// ─── R13 — Official SDK support for 2026-07-28 (facts as of 2026-10) ───────
+
+const SOURCE_TS_SDK_MIGRATION = "https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28"; // confirmed
+const SOURCE_TS_SDK_NPM = "https://www.npmjs.com/package/@modelcontextprotocol/sdk"; // confirmed
+export const SOURCE_PY_SDK_RELEASES = "https://github.com/modelcontextprotocol/python-sdk/releases"; // confirmed
+// source: SOURCE_TS_SDK_NPM — monolithic v1.x (latest 1.32.1) implements up to 2025-11-25; 07-28 not planned — confirmed
+export const PKG_TS_SDK_V1 = "@modelcontextprotocol/sdk";
+// source: SOURCE_TS_SDK_MIGRATION — v2 is split into server/client/node packages — confirmed
+export const PKG_TS_SERVER_V2 = "@modelcontextprotocol/server";
+// source: SOURCE_TS_SDK_MIGRATION — v2 speaks 07-28 only when the author opts in via one of these — confirmed
+export const SDK_OPT_IN_HTTP = "createMcpHandler"; // also validates Mcp-Method / Mcp-Name
+export const SDK_OPT_IN_STDIO = "serveStdio";
+export const SDK_OPT_IN_TRANSPORT = "PerRequestHTTPServerTransport";
+export const SDK_OPT_IN_ENTRY_POINTS = [SDK_OPT_IN_HTTP, SDK_OPT_IN_STDIO, SDK_OPT_IN_TRANSPORT];
+// source: SOURCE_TS_SDK_MIGRATION — v2 authors replace these with inputRequired(...) (MRTR) — confirmed
+export const SDK_SERVER_INITIATED_CALLS = ["elicitInput", "requestSampling"];
+export const SDK_INPUT_REQUIRED_CALL = "inputRequired";
+export const SDK_CACHE_HINTS = "cacheHints"; // source: SOURCE_TS_SDK_MIGRATION — confirmed
+// source: SOURCE_PY_SDK_RELEASES — PyPI `mcp` >= 2.0.0 (released 2026-07-28) speaks 07-28 by default — confirmed
+export const PKG_PY_MCP = "mcp";
+export const PY_SDK_MIN_VERSION = "2.0.0";
+// source: SOURCE_PY_SDK_RELEASES — v2 renamed FastMCP to MCPServer; mcp.server.fastmcp is a 1.x import path — confirmed
+export const PY_FASTMCP_IMPORT = "mcp.server.fastmcp";
+export const PY_SERVER_CLASS_V2 = "MCPServer";
+export const PY_SERVER_CLASS_V1 = "FastMCP";
+// source: SOURCE_PY_SDK_RELEASES — standalone `fastmcp` is a separate project; 07-28 support unknown — confirmed
+export const PKG_PY_FASTMCP_STANDALONE = "fastmcp";
+export const SPEC_REF_R13_SDK = SOURCE_TS_SDK_MIGRATION;
+
 // ─── Heuristic: "does this project look like an MCP server?" ───────────────
 // heuristic — tool-side convention, not a spec literal
 export const MCP_SERVER_HINT = /modelcontextprotocol|McpServer|FastMCP|mcp\.server/i;

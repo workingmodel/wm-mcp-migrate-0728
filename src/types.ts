@@ -27,11 +27,28 @@ export interface SourceFile {
   lang: "ts" | "py" | "other";
 }
 
+export type SdkKind =
+  | "ts-v1"
+  | "ts-v2-optedin"
+  | "ts-v2-not-optedin"
+  | "py-v2"
+  | "py-v1"
+  | "py-unknown"
+  | "fastmcp-standalone"
+  | "none";
+
+export interface SdkInfo {
+  kind: SdkKind;
+  installedVersion?: string; // read from node_modules/<pkg>/package.json when present
+  validatesRoutingHeaders: boolean; // SDK entry point validates the routing headers itself
+}
+
 export interface StaticContext {
   root: string;
   files: SourceFile[];
   // convenience: concatenation of all file contents, for cheap whole-project greps
   allContent: string;
+  sdk: SdkInfo; // official-SDK detection (root manifest only)
 }
 
 // ─── Live probe ───────────────────────────────────────────────────────────

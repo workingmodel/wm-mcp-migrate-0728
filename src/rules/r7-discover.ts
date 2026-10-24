@@ -6,6 +6,7 @@ const ID = "R7";
 const TITLE = "Discovery";
 
 function staticCheck(ctx: StaticContext): Finding[] {
+  if (ctx.sdk.kind !== "none") return []; // SDK serves discovery (R13 covers it)
   if (!looksLikeMcpServer(ctx)) return [];
   if (ctx.allContent.includes(METHOD_SERVER_DISCOVER)) return [];
   return [

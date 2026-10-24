@@ -13,6 +13,7 @@ import { r9Tasks } from "../src/rules/r9-tasks.js";
 import { r10AuthIss } from "../src/rules/r10-auth-iss.js";
 import { r11Removed } from "../src/rules/r11-removed.js";
 import { r12ResultType } from "../src/rules/r12-result-type.js";
+import { r13Sdk } from "../src/rules/r13-sdk.js";
 import { CORE_RULES } from "../src/rules/index.js";
 import { buildStaticContext } from "../src/static/scan.js";
 
@@ -298,5 +299,93 @@ describe("fully clean fixture", () => {
     const ctx = ctxFor("fully-clean-ts");
     const findings = CORE_RULES.flatMap((r) => r.staticCheck?.(ctx) ?? []);
     expect(findings).toEqual([]);
+  });
+});
+
+// ─── R13 — SDK detection + plumbing suppression ─────────────────────────────
+
+function coreFindings(name: string) {
+  const ctx = ctxFor(name);
+  return CORE_RULES.flatMap((r) => r.staticCheck?.(ctx) ?? []);
+}
+
+describe("R13 SDK — static", () => {
+  it("ts-v1: exactly one error (R13), no R1-meta / R4 / R7 / R12 plumbing noise", () => {
+    const findings = coreFindings("sdk-ts-v1");
+    const errors = findings.filter((f) => f.severity === "error");
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.ruleId).toBe("R13");
+    expect(errors[0]?.message).toContain("@modelcontextprotocol/sdk");
+    expect(findings.some((f) => ["R4", "R7", "R12"].includes(f.ruleId))).toBe(false);
+  });
+
+  it("ts-v2 opted in: R13 info only, no errors", () => {
+    const findings = coreFindings("sdk-ts-v2-optedin");
+    expect(findings.filter((f) => f.severity === "error")).toEqual([]);
+    expect(findings.find((f) => f.ruleId === "R13")?.severity).toBe("info");
+  });
+
+  it("ts-v2 not opted in: R13 error", () => {
+    const findings = r13Sdk.staticCheck!(ctxFor("sdk-ts-v2-not-optedin"));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("error");
+    expect(findings[0]?.message).toContain("never opts in");
+  });
+
+  it("py mcp>=2: no errors", () => {
+    const findings = coreFindings("sdk-py-v2");
+    expect(findings.filter((f) => f.severity === "error")).toEqual([]);
+    expect(ctxFor("sdk-py-v2").sdk.kind).toBe("py-v2");
+  });
+
+  it("py mcp>=1.28,<2: R13 error", () => {
+    const findings = r13Sdk.staticCheck!(ctxFor("sdk-py-v1"));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("error");
+    expect(findings[0]?.fix).toContain("MCPServer");
+  });
+
+  it("py `from mcp.server.fastmcp import FastMCP` (no manifest): R13 error", () => {
+    const findings = r13Sdk.staticCheck!(ctxFor("sdk-py-fastmcp-import"));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("error");
+  });
+
+  it("py mcp with no version bound: info", () => {
+    expect(r13Sdk.staticCheck!(ctxFor("sdk-py-unknown"))[0]?.severity).toBe("info");
+  });
+
+  it("standalone fastmcp: info", () => {
+    const findings = r13Sdk.staticCheck!(ctxFor("sdk-py-fastmcp-standalone"));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("info");
+  });
+
+  it("author-owned rules still fire under a v2 opted-in SDK (R8 via elicitInput)", () => {
+    const findings = coreFindings("sdk-ts-v2-mrtr-bad");
+    expect(findings.some((f) => f.ruleId === "R8" && f.severity === "error")).toBe(true);
+  });
+
+  it("hand-rolled servers (no SDK) are unchanged and emit no R13", () => {
+    expect(ctxFor("r1-sessions-bad-ts").sdk.kind).toBe("none");
+    expect(coreFindings("fully-clean-ts")).toEqual([]);
+    expect(r7Discover.staticCheck!(ctxFor("r7-discover-bad-ts"))).toHaveLength(1);
+  });
+
+  it("keeps R1's session/handshake finding when the literal is in author code, but drops the protocolVersion one", () => {
+    const ctx = ctxFor("r1-sessions-bad-ts");
+    ctx.sdk = { kind: "ts-v1", validatesRoutingHeaders: false };
+    const findings = r1Sessions.staticCheck!(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.message).toContain("Mcp-Session-Id");
+  });
+
+  it("R2 is suppressed only when the SDK entry point validates routing headers", () => {
+    const ctx = ctxFor("r2-headers-bad-ts");
+    expect(r2Headers.staticCheck!(ctx)).toHaveLength(1);
+    ctx.sdk = { kind: "ts-v1", validatesRoutingHeaders: false };
+    expect(r2Headers.staticCheck!(ctx)).toHaveLength(1);
+    ctx.sdk = { kind: "ts-v2-optedin", validatesRoutingHeaders: true };
+    expect(r2Headers.staticCheck!(ctx)).toHaveLength(0);
   });
 });

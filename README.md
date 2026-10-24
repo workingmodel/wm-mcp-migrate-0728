@@ -40,6 +40,7 @@ Point it at an MCP server — its source (static analysis) or a running endpoint
 10. **Authorization `iss`** — RFC 9207 issuer handling
 11. **Removed methods** — `ping`, `logging/setLevel`, subscribe/unsubscribe, SSE resumability, and more
 12. **`resultType`** — required on every result
+13. **SDK support** — whether the official SDK you build on can speak 07-28 at all
 
 Both modes can run together (a path *and* `--url`): static and live findings are merged and grouped by rule.
 
@@ -86,12 +87,15 @@ mcp-migrate-0728 ./server --strict
 | R10 | Authorization code without `iss` handling (RFC 9207) | warning |
 | R11 | Removed methods/headers: `ping`, `logging/setLevel`, `notifications/roots/list_changed`, `resources/subscribe`/`unsubscribe`, `notifications/elicitation/complete`, `Last-Event-ID` | error |
 | R12 | `resultType` required on every result | error |
+| R13 | Official SDK support: `@modelcontextprotocol/sdk` v1.x, v2 never opted in, or Python `mcp` < 2 → error; unverifiable / opted-in → info | error |
 
 `--strict` additionally runs one forward-looking `info`-only rule, F3 (JSON Schema 2020-12 dialect for `inputSchema`/`outputSchema`). It never blocks CI.
 
 ## How It Works
 
 **Static mode** walks your project (skipping `node_modules`, `.git`, `dist`, Python virtualenvs, etc.), reads TS/JS and Python source, and heuristically pattern-matches each rule's signals — string/header/capability references, not an AST-level proof.
+
+**SDK-based servers.** The scan skips `node_modules`, so protocol plumbing owned by an official SDK is invisible in source. The tool reads your root `package.json` / `pyproject.toml` / `requirements*.txt` (plus the one installed SDK `package.json`) to detect the SDK, and reports a single R13 finding instead. When an SDK is detected, the SDK-owned checks (R1 `_meta` envelope, R4, R7, R12, and R2 where the entry point validates the headers) are skipped; rules about your own code (R3, R5, R6, R8–R11) still run at full strength, and the live probe is never suppressed. `@modelcontextprotocol/sdk` v1.x cannot speak 07-28; v2 must be opted in via `createMcpHandler` / `serveStdio`; Python `mcp` >= 2.0.0 speaks it by default.
 
 **Live-connect mode** speaks raw JSON-RPC over Streamable HTTP using native `fetch` — no MCP SDK dependency — so it can control headers at the wire level (required to test R1/R2) and keep the dependency footprint tiny (chalk is the only runtime dependency). It sends requests with and without the new headers, triggers a missing-resource error, calls `tools/list`, and reads advertised capabilities from `server/discover` (falling back to the legacy `initialize` call for servers that haven't migrated).
 
@@ -101,6 +105,7 @@ All spec-specific literals (header names, error codes, field names, method names
 
 - Static analysis is **heuristic** (pattern-based, TS/JS + Python) — it produces a migration punch list, not a proof. A server that structures things unusually can produce false positives or false negatives.
 - **Checked against the final 2026-07-28 spec.** The live probe covers R1–R6 only; R7–R12 are static heuristics (string/pattern signals, not proofs), so expect some false positives and negatives.
+- SDK detection reads the **root** manifests only (monorepo subpackages are not followed), and the SDK-version facts reflect SDK releases as of 2026-10.
 - The live probe covers the **Streamable HTTP** transport only.
 - R5 (Trace Context) live-checking is best-effort: propagation isn't directly observable from the client, so an inconclusive result is reported as `info`, not a pass/fail verdict.
 

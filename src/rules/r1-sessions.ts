@@ -32,7 +32,8 @@ function staticCheck(ctx: StaticContext): Finding[] {
 
   // The namespaced key is the real signal: a bare `_meta` read (e.g. progressToken) doesn't
   // prove the server reads the per-request protocol version.
-  if (!ctx.allContent.includes(META_PROTOCOL_VERSION)) {
+  // With an official SDK the envelope is the SDK's job (R13 covers SDK support).
+  if (ctx.sdk.kind === "none" && !ctx.allContent.includes(META_PROTOCOL_VERSION)) {
     findings.push({
       ruleId: ID,
       severity: "error",

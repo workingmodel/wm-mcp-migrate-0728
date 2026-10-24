@@ -13,6 +13,7 @@ const ID = "R4";
 const TITLE = "Cache metadata";
 
 function staticCheck(ctx: StaticContext): Finding[] {
+  if (ctx.sdk.kind !== "none") return []; // SDK always emits cache fields (R13 covers it)
   const buildsCacheable = CACHEABLE_METHODS.some((m) => ctx.allContent.includes(m));
   if (!buildsCacheable) return [];
 

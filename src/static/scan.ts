@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { detectSdk } from "./sdk.js";
 import type { SourceFile, StaticContext } from "../types.js";
 
 // File extensions this tool understands — TS/JS and Python, the two dominant MCP server languages.
@@ -62,9 +63,6 @@ export function buildStaticContext(root: string): StaticContext {
   const files: SourceFile[] = [];
   walk(root, root, files);
 
-  return {
-    root,
-    files,
-    allContent: files.map((f) => f.content).join("\n"),
-  };
+  const allContent = files.map((f) => f.content).join("\n");
+  return { root, files, allContent, sdk: detectSdk(root, allContent) };
 }

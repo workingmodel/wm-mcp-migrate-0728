@@ -10,6 +10,7 @@ Updated from the 2026-07-28 Release Candidate to the **final** spec (primary sou
 - **R6** message: removal is "the first spec revision released on or after 2027-07-28" (was "~May 2027").
 - **New core rules** (promoted from `--strict`): R7 `server/discover` (error), R8 Multi Round-Trip Requests (error; only flags servers that send server-initiated `sampling/createMessage` / `elicitation/create` / `roots/list`), R9 `tasks/list` removed (error), R10 authorization `iss` (warning).
 - **New core rules:** R11 removed methods/headers (`ping`, `logging/setLevel`, `notifications/roots/list_changed`, `resources/subscribe`/`unsubscribe`, `notifications/elicitation/complete`, `Last-Event-ID`), R12 required `resultType`. Static only.
+- **R13 SDK** (static): detects the official SDK from root manifests (`package.json`, `pyproject.toml`, `requirements*.txt`) and source. `@modelcontextprotocol/sdk` v1.x, v2 without a `createMcpHandler`/`serveStdio` opt-in, and Python `mcp` < 2 / `mcp.server.fastmcp` imports are errors; opted-in v2 and `mcp` >= 2 are info. When an SDK is detected, SDK-owned plumbing findings (R1 `_meta` version, R4, R7, R12, R2 where applicable) are suppressed; live checks are not. R8 now also recognizes `elicitInput` / `requestSampling` calls.
 - `--strict` now runs only F3 (JSON Schema 2020-12, info). F1, F2, F4, F5 are gone (replaced by R7–R10).
 - Live probe: reads capabilities from `server/discover`, falling back to `initialize` for non-migrated servers.
 

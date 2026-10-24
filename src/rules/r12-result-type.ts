@@ -13,6 +13,7 @@ const ID = "R12";
 const TITLE = "Result type";
 
 function staticCheck(ctx: StaticContext): Finding[] {
+  if (ctx.sdk.kind !== "none") return []; // the SDK owns result envelopes (R13 covers it)
   // Heuristic: a project that handles tools/call or tools/list builds JSON-RPC results.
   const buildsResults = ctx.allContent.includes(METHOD_TOOLS_CALL) || ctx.allContent.includes(METHOD_TOOLS_LIST);
   if (!buildsResults) return [];
