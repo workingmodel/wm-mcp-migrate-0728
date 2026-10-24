@@ -30,7 +30,7 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; co
 }
 
 // These exercise the built dist/index.js directly — they assume `npm run build` has already
-// produced dist/. This mirrors how the CLI is actually invoked (§10 of build-spec.md).
+// produced dist/. This mirrors how the CLI is actually invoked.
 describe("CLI integration — static mode", () => {
   it("exits 1 and prints errors for a non-migrated fixture", async () => {
     const { stdout, code } = await run([path.join(FIXTURES, "r1-sessions-bad-ts")]);

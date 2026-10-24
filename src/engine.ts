@@ -3,9 +3,7 @@ import type { Finding, ProbeResult, StaticContext } from "./types.js";
 
 /**
  * Runs every applicable rule's static and/or live check and returns the combined findings.
- * Same ruleId from static + live are both kept (grouped by rule id in the renderer), per
- * build-spec.md §4: "dedupes (same ruleId from static+live → keep both but group under the
- * rule in output)".
+ * Same ruleId from static + live are both kept (grouped by rule id in the renderer).
  */
 export function runEngine(opts: {
   staticCtx?: StaticContext;
