@@ -3,104 +3,175 @@
  * No spec literal (header name, error code, field name, method name, deprecation date,
  * spec-section URL) may be hardcoded anywhere else in this codebase.
  *
- * The 2026-07-28 spec is a Release Candidate (locked 2026-05-21). Exact strings may shift
- * between RC and final. Every constant below carries:
+ * Checked against the FINAL 2026-07-28 spec (v1.1.0). Every constant below carries:
  *   - a `// source:` comment with the URL it came from
- *   - a confidence tag: `// confirmed` (verified against a primary spec/source document) or
- *     `// rc-summarizer — verify against final` (derived from a secondary summary/builder guide
- *     and NOT independently verified against the primary source at build time)
+ *   - a confidence tag: `// confirmed` (verified against the primary spec/changelog) or
+ *     `// heuristic` (a tool-side convention, not a spec literal)
  *
- * Updating this tool for the final 07-28 spec should be a single-file edit: this file.
+ * Updating this tool for a future spec revision should be a single-file edit: this file.
  */
 
 // ─── Spec identity ─────────────────────────────────────────────────────────
 
 export const SPEC_DATE = "2026-07-28";
-export const SPEC_STATUS = "release candidate"; // rc-summarizer — verify against final (flip to "final" once 07-28 lands)
+export const SPEC_STATUS = "final"; // source: SOURCE_FINAL_CHANGELOG — confirmed
 
 // ─── Primary sources (for footer / specRef fallback / --json metadata) ────
 
-export const SOURCE_RC_BLOG =
-  "https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/"; // source: build-spec.md §8
-export const SOURCE_ROADMAP_BLOG =
-  "https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/"; // source: build-spec.md §8
-export const SOURCE_CHATFOREST_GUIDE =
-  "https://chatforest.com/builders-log/mcp-spec-2026-07-28-release-candidate-stateless-breaking-changes-builder-guide/"; // source: build-spec.md §8 — secondary/summarizer source
+const SPEC_BASE = "https://modelcontextprotocol.io/specification/2026-07-28";
+export const SOURCE_FINAL_CHANGELOG = `${SPEC_BASE}/changelog`; // source: final spec changelog — confirmed
+export const SOURCE_DEPRECATED_REGISTRY = `${SPEC_BASE}/deprecated`; // source: final spec deprecated registry — confirmed
 
 // ─── R1 — Sessions eliminated; client metadata moves to `_meta` per-request ──
 
-// source: SOURCE_RC_BLOG (session removal is the headline stateless change) — rc-summarizer — verify against final
+// source: SOURCE_FINAL_CHANGELOG (Mcp-Session-Id and protocol sessions removed) — confirmed
 export const HEADER_SESSION_ID = "Mcp-Session-Id";
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final
+// source: SOURCE_FINAL_CHANGELOG (initialize / notifications/initialized handshake removed) — confirmed
 export const METHOD_INITIALIZE = "initialize";
-export const METHOD_INITIALIZED = "initialized";
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final
+export const METHOD_INITIALIZED = "notifications/initialized";
+// source: SOURCE_FINAL_CHANGELOG — confirmed
 export const META_FIELD = "_meta";
+// source: SOURCE_FINAL_CHANGELOG (legacy initialize params field name, used only by the fallback probe) — confirmed
+export const FIELD_PROTOCOL_VERSION = "protocolVersion";
+// source: SOURCE_FINAL_CHANGELOG (every request carries these `_meta` keys) — confirmed
+export const META_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion";
+export const META_CLIENT_CAPABILITIES = "io.modelcontextprotocol/clientCapabilities";
+// source: SOURCE_FINAL_CHANGELOG (clientInfo SHOULD be sent; serverInfo SHOULD be on results) — confirmed
+export const META_CLIENT_INFO = "io.modelcontextprotocol/clientInfo";
+export const META_SERVER_INFO = "io.modelcontextprotocol/serverInfo";
+// source: SOURCE_FINAL_CHANGELOG (per-request log level replaces logging/setLevel) — confirmed
+export const META_LOG_LEVEL = "io.modelcontextprotocol/logLevel";
 
-// ─── R2 — New required routing headers ─────────────────────────────────────
+// ─── R2 — Required routing headers ─────────────────────────────────────────
 
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final
+// source: SOURCE_FINAL_CHANGELOG (required on Streamable HTTP POST requests) — confirmed
 export const HEADER_MCP_METHOD = "Mcp-Method";
 export const HEADER_MCP_NAME = "Mcp-Name";
 
 // ─── R3 — Error-code change for missing resource ───────────────────────────
 
-// source: SOURCE_CHATFOREST_GUIDE, current MCP spec error convention — confirmed
-// (-32002 "Resource not found" is a documented MCP-specific JSON-RPC error code
-// in the pre-07-28 spec; this is the LEGACY value the rule flags.)
+// source: SOURCE_FINAL_CHANGELOG (resource-not-found changed from -32002 to -32602) — confirmed
 export const ERROR_CODE_RESOURCE_NOT_FOUND_LEGACY = -32002;
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final
-// (per build-spec.md §5 R3: "current reading" only, explicitly flagged as
-// partly from an RC summarizer — NOT independently confirmed against a primary
-// source at build time.)
 export const ERROR_CODE_RESOURCE_NOT_FOUND_NEW = -32602; // JSON-RPC standard "Invalid Params"
 
-// ─── R4 — ttlMs (and cacheScope) list-cache metadata ───────────────────────
+// ─── R4 — Cache metadata (CacheableResult: ttlMs + cacheScope REQUIRED) ────
 
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final
+// source: SOURCE_FINAL_CHANGELOG — confirmed
 export const FIELD_TTL_MS = "ttlMs";
-// source: SOURCE_CHATFOREST_GUIDE — rc-summarizer — verify against final (mentioned as "+ cacheScope if confirmed" in build-spec.md §5 R4 — not confirmed)
 export const FIELD_CACHE_SCOPE = "cacheScope";
+export const CACHE_SCOPE_PUBLIC = "public"; // source: SOURCE_FINAL_CHANGELOG — confirmed
+export const CACHE_SCOPE_PRIVATE = "private"; // source: SOURCE_FINAL_CHANGELOG — confirmed
+// source: SOURCE_FINAL_CHANGELOG (CacheableResult applies to exactly these five methods) — confirmed
+export const METHOD_TOOLS_LIST = "tools/list";
+export const METHOD_PROMPTS_LIST = "prompts/list";
+export const METHOD_RESOURCES_LIST = "resources/list";
+export const METHOD_RESOURCES_READ = "resources/read";
+export const METHOD_RESOURCES_TEMPLATES_LIST = "resources/templates/list";
+export const CACHEABLE_METHODS = [
+  METHOD_TOOLS_LIST,
+  METHOD_PROMPTS_LIST,
+  METHOD_RESOURCES_LIST,
+  METHOD_RESOURCES_READ,
+  METHOD_RESOURCES_TEMPLATES_LIST,
+];
 
 // ─── R5 — W3C Trace Context propagation via `_meta` ────────────────────────
 
-// source: W3C Trace Context spec (https://www.w3.org/TR/trace-context/) — confirmed (these are
-// the standard W3C header/field names, independent of MCP's own RC status)
+// source: SOURCE_FINAL_CHANGELOG (SEP-414 documents these `_meta` keys); W3C Trace Context
+// (https://www.w3.org/TR/trace-context/) — confirmed
 export const TRACE_FIELD_TRACEPARENT = "traceparent";
 export const TRACE_FIELD_TRACESTATE = "tracestate";
 export const TRACE_FIELD_BAGGAGE = "baggage";
 
 // ─── R6 — Deprecated primitives: Roots, Sampling, Logging ──────────────────
 
-// source: SOURCE_ROADMAP_BLOG — rc-summarizer — verify against final
+// source: SOURCE_DEPRECATED_REGISTRY — confirmed
 export const CAPABILITY_ROOTS = "roots";
 export const CAPABILITY_SAMPLING = "sampling";
 export const CAPABILITY_LOGGING = "logging";
-// source: SOURCE_ROADMAP_BLOG — rc-summarizer — verify against final
-export const DEPRECATION_SUNSET_DATE = "2027-05"; // "~May 2027" per build-spec.md §5 R6
+// source: SOURCE_DEPRECATED_REGISTRY (earliest removal: first revision released on or after this date) — confirmed
+export const DEPRECATION_EARLIEST_REMOVAL = "2027-07-28";
 
-// ─── F-series (forward-looking, --strict only) ─────────────────────────────
+// ─── R7 — server/discover ──────────────────────────────────────────────────
 
-// source: SOURCE_ROADMAP_BLOG — rc-summarizer — verify against final
+// source: SOURCE_FINAL_CHANGELOG (servers MUST implement it) — confirmed
 export const METHOD_SERVER_DISCOVER = "server/discover";
+
+// ─── R8 — Multi Round-Trip Requests (MRTR) ─────────────────────────────────
+
+// source: SPEC_REF_R8_MRTR — confirmed
 export const RESULT_INPUT_REQUIRED = "InputRequiredResult";
-export const JSON_SCHEMA_DIALECT_2020_12 = "https://json-schema.org/draft/2020-12/schema"; // confirmed (this is the real, stable JSON Schema 2020-12 meta-schema URI)
+export const RESULT_TYPE_INPUT_REQUIRED = "input_required";
+export const FIELD_INPUT_REQUESTS = "inputRequests";
+// source: SOURCE_FINAL_CHANGELOG (server-initiated requests replaced by InputRequiredResult) — confirmed
+export const METHOD_SAMPLING_CREATE_MESSAGE = "sampling/createMessage";
+export const METHOD_ELICITATION_CREATE = "elicitation/create";
+export const METHOD_ROOTS_LIST = "roots/list";
+export const SERVER_INITIATED_METHODS = [
+  METHOD_SAMPLING_CREATE_MESSAGE,
+  METHOD_ELICITATION_CREATE,
+  METHOD_ROOTS_LIST,
+];
+
+// ─── R9 — Tasks moved to an extension ──────────────────────────────────────
+
+// source: SOURCE_FINAL_CHANGELOG (tasks/list REMOVED; tasks/result replaced by polling) — confirmed
 export const METHOD_TASKS_LIST = "tasks/list";
+export const METHOD_TASKS_GET = "tasks/get";
+export const METHOD_TASKS_UPDATE = "tasks/update";
+export const EXTENSION_TASKS = "io.modelcontextprotocol/tasks"; // source: SOURCE_FINAL_CHANGELOG — confirmed
+
+// ─── R10 — Authorization `iss` (RFC 9207) ──────────────────────────────────
+
+// source: SPEC_REF_R10_AUTH (servers SHOULD include `iss`; clients MUST validate a present `iss`) — confirmed
 export const AUTH_PARAM_ISS = "iss";
+export const RFC_AUTH_ISSUER = "RFC 9207"; // source: SPEC_REF_R10_AUTH — confirmed
+
+// ─── R11 — Removed methods / headers ───────────────────────────────────────
+
+// source: SOURCE_FINAL_CHANGELOG — confirmed (all removed in 2026-07-28)
+export const METHOD_PING = "ping";
+export const METHOD_LOGGING_SET_LEVEL = "logging/setLevel";
+export const METHOD_ROOTS_LIST_CHANGED = "notifications/roots/list_changed";
+export const METHOD_RESOURCES_SUBSCRIBE = "resources/subscribe";
+export const METHOD_RESOURCES_UNSUBSCRIBE = "resources/unsubscribe";
+export const METHOD_ELICITATION_COMPLETE = "notifications/elicitation/complete";
+export const HEADER_LAST_EVENT_ID = "Last-Event-ID"; // SSE resumability removed
+export const METHOD_SUBSCRIPTIONS_LISTEN = "subscriptions/listen"; // replacement for resources/subscribe
+
+// ─── R12 — resultType on every result ──────────────────────────────────────
+
+// source: SOURCE_FINAL_CHANGELOG (REQUIRED on all results) — confirmed
+export const FIELD_RESULT_TYPE = "resultType";
+export const RESULT_TYPE_COMPLETE = "complete";
+export const METHOD_TOOLS_CALL = "tools/call";
+
+// ─── F-series (--strict only, info) ────────────────────────────────────────
+
+// source: JSON Schema 2020-12 meta-schema URI — confirmed (stable, spec-independent)
+export const JSON_SCHEMA_DIALECT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
+
+// ─── Heuristic: "does this project look like an MCP server?" ───────────────
+// heuristic — tool-side convention, not a spec literal
+export const MCP_SERVER_HINT = /modelcontextprotocol|McpServer|FastMCP|mcp\.server/i;
 
 // ─── Spec section references (per-rule, for Finding.specRef) ──────────────
-// rc-summarizer — verify against final: anchors/paths on the RC blog post are our best guess
-// at where each topic will live; the RC blog is a single long post without stable per-topic
-// anchors as of build time, so every specRef below points at the top-level RC post or roadmap
-// post rather than a verified deep link.
+// Per-topic pages exist for these (HTTP 200 at build time); everything else falls back to the
+// changelog rather than inventing an anchor.
 
-export const SPEC_REF_R1_SESSIONS = SOURCE_RC_BLOG;
-export const SPEC_REF_R2_HEADERS = SOURCE_RC_BLOG;
-export const SPEC_REF_R3_ERROR_CODE = SOURCE_RC_BLOG;
-export const SPEC_REF_R4_TTL_MS = SOURCE_RC_BLOG;
-export const SPEC_REF_R5_TRACE_CONTEXT = SOURCE_RC_BLOG;
-export const SPEC_REF_R6_DEPRECATED = SOURCE_ROADMAP_BLOG;
-export const SPEC_REF_F_SERIES = SOURCE_ROADMAP_BLOG;
+export const SPEC_REF_R1_SESSIONS = `${SPEC_BASE}/basic/transports/streamable-http`; // confirmed
+export const SPEC_REF_R2_HEADERS = `${SPEC_BASE}/basic/transports/streamable-http`; // confirmed
+export const SPEC_REF_R3_ERROR_CODE = `${SPEC_BASE}/basic/index`; // confirmed
+export const SPEC_REF_R4_TTL_MS = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_R5_TRACE_CONTEXT = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_R6_DEPRECATED = SOURCE_DEPRECATED_REGISTRY;
+export const SPEC_REF_R7_DISCOVER = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_R8_MRTR = `${SPEC_BASE}/basic/patterns/mrtr`; // confirmed
+export const SPEC_REF_R9_TASKS = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_R10_AUTH = `${SPEC_BASE}/basic/authorization`; // confirmed
+export const SPEC_REF_R11_REMOVED = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_R12_RESULT_TYPE = SOURCE_FINAL_CHANGELOG;
+export const SPEC_REF_F_SERIES = SOURCE_FINAL_CHANGELOG;
 
 // ─── C6 footer hook ─────────────────────────────────────────────────────────
 
