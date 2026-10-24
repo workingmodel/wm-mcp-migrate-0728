@@ -45,22 +45,36 @@ describe("R3 error code — live", () => {
     expect(findings).toHaveLength(0);
   });
 
-  it("flags a warning (not error) when the legacy code is returned", () => {
+  it("flags an error when the legacy code is returned", () => {
     const findings = r3ErrorCode.liveCheck!(baseProbe({ errorCode: { ok: true, code: -32002 } }));
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.severity).toBe("warning");
+    expect(findings[0]?.severity).toBe("error");
+    expect(findings[0]?.message).not.toMatch(/verify against|once confirmed/i);
+  });
+
+  it("flags an error for an unrelated code", () => {
+    const findings = r3ErrorCode.liveCheck!(baseProbe({ errorCode: { ok: true, code: -32000 } }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("error");
   });
 });
 
-describe("R4 ttlMs — live", () => {
-  it("flags a warning when ttlMs is absent from tools/list", () => {
-    const findings = r4TtlMs.liveCheck!(baseProbe({ listCache: { ok: true, hasTtlMs: false } }));
-    expect(findings).toHaveLength(1);
-    expect(findings[0]?.severity).toBe("warning");
+describe("R4 cache metadata — live", () => {
+  it("flags an error for each of ttlMs and cacheScope when absent", () => {
+    const findings = r4TtlMs.liveCheck!(baseProbe({ listCache: { ok: true, hasTtlMs: false, hasCacheScope: false } }));
+    expect(findings).toHaveLength(2);
+    expect(findings.every((f) => f.severity === "error")).toBe(true);
+    expect(findings.every((f) => f.message.includes("REQUIRED"))).toBe(true);
   });
 
-  it("emits nothing when ttlMs is present", () => {
-    const findings = r4TtlMs.liveCheck!(baseProbe({ listCache: { ok: true, hasTtlMs: true } }));
+  it("flags only cacheScope when ttlMs is present", () => {
+    const findings = r4TtlMs.liveCheck!(baseProbe({ listCache: { ok: true, hasTtlMs: true, hasCacheScope: false } }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.message).toContain("cacheScope");
+  });
+
+  it("emits nothing when both are present", () => {
+    const findings = r4TtlMs.liveCheck!(baseProbe({ listCache: { ok: true, hasTtlMs: true, hasCacheScope: true } }));
     expect(findings).toHaveLength(0);
   });
 });

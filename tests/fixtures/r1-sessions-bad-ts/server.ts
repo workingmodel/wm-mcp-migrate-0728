@@ -14,7 +14,7 @@ app.post("/mcp", (req, res) => {
     return res.json({ jsonrpc: "2.0", result: {} });
   }
 
-  if (req.body.method === "initialized") {
+  if (req.body.method === "notifications/initialized") {
     return res.json({ jsonrpc: "2.0", result: {} });
   }
 

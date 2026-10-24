@@ -20,16 +20,17 @@ describe("engine — static + live merge", () => {
     expect(r1Findings.some((f) => f.source === "live")).toBe(true);
   });
 
-  it("does not run F-series rules when strict=false", () => {
+  it("does not run the F-series rule when strict=false", () => {
     const staticCtx = buildStaticContext(path.join(FIXTURES, "r1-sessions-clean-ts"));
     const findings = runEngine({ staticCtx, strict: false });
     expect(findings.some((f) => f.ruleId.startsWith("F"))).toBe(false);
   });
 
-  it("runs F-series rules when strict=true", () => {
-    const staticCtx = buildStaticContext(path.join(FIXTURES, "r1-sessions-clean-ts"));
+  it("runs the F-series rule (F3) when strict=true", () => {
+    const staticCtx = buildStaticContext(path.join(FIXTURES, "f3-schema-bad-ts"));
     const findings = runEngine({ staticCtx, strict: true });
-    expect(findings.some((f) => f.ruleId.startsWith("F"))).toBe(true);
+    expect(findings.some((f) => f.ruleId === "F3" && f.severity === "info")).toBe(true);
+    expect(findings.some((f) => ["F1", "F2", "F4", "F5"].includes(f.ruleId))).toBe(false);
   });
 
   it("returns no findings for an empty context and no probe", () => {

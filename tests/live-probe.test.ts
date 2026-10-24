@@ -67,7 +67,19 @@ describe("live probe — R3 error code", () => {
   });
 });
 
-describe("live probe — R4 ttlMs", () => {
+describe("live probe — R4 cache metadata", () => {
+  it("detects cacheScope present / absent on tools/list", async () => {
+    const withScope = await startMockServer({ includeCacheScope: true });
+    const r1 = await probe(withScope.url);
+    await withScope.close();
+    expect(r1.listCache?.hasCacheScope).toBe(true);
+
+    const without = await startMockServer({ includeCacheScope: false });
+    cleanup = without.close;
+    const r2 = await probe(without.url);
+    expect(r2.listCache?.hasCacheScope).toBe(false);
+  });
+
   it("detects ttlMs present on tools/list", async () => {
     const mock = await startMockServer({ includeTtlMs: true });
     cleanup = mock.close;
@@ -115,6 +127,26 @@ describe("live probe — R6 capabilities", () => {
   });
 });
 
+describe("live probe — R6 server/discover vs initialize fallback", () => {
+  it("reads capabilities from server/discover and never calls initialize when discover works", async () => {
+    const mock = await startMockServer({ capabilities: ["sampling"] });
+    cleanup = mock.close;
+    const result = await probe(mock.url);
+    expect(result.capabilities?.capabilities).toEqual(["sampling"]);
+    expect(mock.methods).toContain("server/discover");
+    expect(mock.methods).not.toContain("initialize");
+  });
+
+  it("falls back to initialize when server/discover is not implemented", async () => {
+    const mock = await startMockServer({ disableDiscover: true, capabilities: ["logging"] });
+    cleanup = mock.close;
+    const result = await probe(mock.url);
+    expect(result.capabilities?.capabilities).toEqual(["logging"]);
+    expect(mock.methods).toContain("server/discover");
+    expect(mock.methods).toContain("initialize");
+  });
+});
+
 describe("live probe — session gate does not mask other findings", () => {
   it("still surfaces R2-R6 signals against a server that requires a session on every request", async () => {
     // Regression test: a server that requires Mcp-Session-Id on every request must not
@@ -127,6 +159,7 @@ describe("live probe — session gate does not mask other findings", () => {
     expect(result.headers?.acceptedWithoutHeaders).toBe(true);
     expect(result.errorCode?.code).toBe(-32002);
     expect(result.listCache?.hasTtlMs).toBe(false);
+    expect(result.listCache?.hasCacheScope).toBe(false);
     expect(result.capabilities?.capabilities).toEqual(
       expect.arrayContaining(["roots", "sampling", "logging"])
     );

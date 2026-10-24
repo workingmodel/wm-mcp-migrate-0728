@@ -7,7 +7,9 @@ interface MockServerOptions {
   resourceErrorCode?: number; // code returned for resources/read on a missing resource
   includeTtlMs?: boolean; // whether tools/list responses include ttlMs
   rejectTraceContext?: boolean; // reject requests carrying _meta.traceparent as "unknown field"
-  capabilities?: string[]; // capabilities advertised from initialize
+  includeCacheScope?: boolean; // whether tools/list responses include cacheScope
+  disableDiscover?: boolean; // old-spec: no server/discover (responds method-not-found)
+  capabilities?: string[]; // capabilities advertised from server/discover and initialize
 }
 
 // Preset: a maximally non-migrated old-spec server — trips every rule at once. Used to
@@ -17,6 +19,8 @@ export const FULLY_OLD_SPEC_OPTIONS: MockServerOptions = {
   enforceRoutingHeaders: false,
   resourceErrorCode: -32002,
   includeTtlMs: false,
+  includeCacheScope: false,
+  disableDiscover: true,
   rejectTraceContext: true,
   capabilities: ["roots", "sampling", "logging"],
 };
@@ -51,7 +55,8 @@ function send(res: http.ServerResponse, status: number, body: unknown): void {
  * Starts a minimal HTTP server emulating either old-spec or new-spec MCP server behavior,
  * for use in live-probe tests. Caller is responsible for calling `close()`.
  */
-export function startMockServer(opts: MockServerOptions = {}): Promise<{ url: string; close: () => Promise<void> }> {
+export function startMockServer(opts: MockServerOptions = {}): Promise<{ url: string; methods: string[]; close: () => Promise<void> }> {
+  const methods: string[] = []; // every JSON-RPC method received, in order
   const server = http.createServer(async (req, res) => {
     if (req.method !== "POST") {
       send(res, 404, { error: "not found" });
@@ -63,6 +68,8 @@ export function startMockServer(opts: MockServerOptions = {}): Promise<{ url: st
       send(res, 400, { error: "bad json" });
       return;
     }
+
+    methods.push(body.method);
 
     // R1: session requirement
     if (opts.requireSession) {
@@ -107,7 +114,19 @@ export function startMockServer(opts: MockServerOptions = {}): Promise<{ url: st
 
       const result: Record<string, unknown> = { tools: [{ name: "search" }] };
       if (opts.includeTtlMs) result.ttlMs = 60000;
+      if (opts.includeCacheScope) result.cacheScope = "public";
       send(res, 200, { jsonrpc: "2.0", id: body.id, result });
+      return;
+    }
+
+    if (body.method === "server/discover") {
+      if (opts.disableDiscover) {
+        send(res, 200, { jsonrpc: "2.0", id: body.id, error: { code: -32601, message: "method not found" } });
+        return;
+      }
+      const capabilities: Record<string, unknown> = {};
+      for (const cap of opts.capabilities ?? []) capabilities[cap] = {};
+      send(res, 200, { jsonrpc: "2.0", id: body.id, result: { resultType: "complete", capabilities } });
       return;
     }
 
@@ -126,6 +145,7 @@ export function startMockServer(opts: MockServerOptions = {}): Promise<{ url: st
       const { port } = server.address() as AddressInfo;
       resolve({
         url: `http://127.0.0.1:${port}/mcp`,
+        methods,
         close: () => new Promise((res) => server.close(() => res())),
       });
     });
