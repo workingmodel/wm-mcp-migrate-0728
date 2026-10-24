@@ -7,7 +7,7 @@ import {
   SPEC_REF_R8_MRTR,
 } from "../spec-constants.js";
 import type { Finding, Rule, StaticContext } from "../types.js";
-import { staticFinding } from "./util.js";
+import { escapeRegExp, staticFinding } from "./util.js";
 
 const ID = "R8";
 const TITLE = "Multi Round-Trip Requests";
@@ -15,7 +15,8 @@ const TITLE = "Multi Round-Trip Requests";
 function staticCheck(ctx: StaticContext): Finding[] {
   // Only servers that actually issue server-initiated requests are affected; a server that
   // never does is not flagged for merely not using InputRequiredResult.
-  const issued = SERVER_INITIATED_METHODS.filter((m) => ctx.allContent.includes(m));
+  // Whole-token match: "roots/list" must not match inside "notifications/roots/list_changed".
+  const issued = SERVER_INITIATED_METHODS.filter((m) => new RegExp(`${escapeRegExp(m)}(?![\\w/])`).test(ctx.allContent));
   if (issued.length === 0) return [];
   if (ctx.allContent.includes(RESULT_INPUT_REQUIRED) || ctx.allContent.includes(RESULT_TYPE_INPUT_REQUIRED)) return [];
 

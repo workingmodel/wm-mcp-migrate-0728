@@ -197,6 +197,10 @@ describe("R8 MRTR — static", () => {
     expect(r8Mrtr.staticCheck!(ctxFor("r8-mrtr-clean-ts"))).toHaveLength(0);
   });
 
+  it("does not mistake notifications/roots/list_changed for a roots/list request", () => {
+    expect(r8Mrtr.staticCheck!(ctxFor("r11-removed-bad-ts"))).toHaveLength(0);
+  });
+
   it("does NOT flag a server that never issues server-initiated requests (no false positive)", () => {
     expect(r8Mrtr.staticCheck!(ctxFor("r8-no-initiated-ts"))).toHaveLength(0);
   });
